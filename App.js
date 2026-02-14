@@ -6,6 +6,7 @@ import Dashboard from "./screens/Dashboard";
 import Alerts from "./screens/Alerts";
 import Controls from "./screens/Controls";
 import Settings from "./screens/Settings";
+import MotorControl from "./screens/MotorControl";
 import { COLORS } from "./constants/theme";
 
 const Tab = createBottomTabNavigator();
@@ -29,6 +30,8 @@ export default function App() {
               iconName = "megaphone-outline";
             } else if (route.name === "Settings") {
               iconName = "settings-outline";
+            } else if (route.name === "Motor") {
+              iconName = "power-outline";
             }
 
             return <Ionicons name={iconName} size={size} color={color} />;
@@ -43,6 +46,7 @@ export default function App() {
         <Tab.Screen name="Alerts" component={Alerts} />
         <Tab.Screen name="Controls" component={Controls} />
         <Tab.Screen name="Settings" component={Settings} />
+        <Tab.Screen name="Motor" component={MotorControl} />
       </Tab.Navigator>
     </NavigationContainer>
   );

@@ -1,4 +1,9 @@
-const BASE_URL = "http://192.168.0.102:5000";
+const BASE_URL = "https://iot-bbackend.onrender.com";
+
+export async function getLatestDetection() {
+  const res = await fetch(`${BASE_URL}/app/latest`);
+  return res.json();
+}
 
 export async function sendDetection(data) {
   return fetch(`${BASE_URL}/device/detection`, {
@@ -8,11 +13,16 @@ export async function sendDetection(data) {
   });
 }
 
-export async function sendCommand(command) {
-  return fetch(`${BASE_URL}/device/command`, {
+export async function sendCommand(action) {
+  const payload =
+    typeof action === "string"
+      ? { device_id: "farm_001", action }
+      : { device_id: "farm_001", ...action };
+
+  return fetch(`${BASE_URL}/app/command`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
-    body: JSON.stringify(command)
+    body: JSON.stringify(payload)
   });
 }
 
