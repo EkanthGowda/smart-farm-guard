@@ -35,21 +35,9 @@ export async function getAlerts() {
 }
 
 export async function getSounds() {
-  const response = await fetch(`${BASE_URL}/sounds`);
+  const response = await fetch(`${BASE_URL}/app/sounds`);
   if (!response.ok) {
     throw new Error("Failed to fetch sounds");
-  }
-  return response.json();
-}
-
-export async function selectSound(soundId) {
-  const response = await fetch(`${BASE_URL}/sounds/select`, {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ soundId })
-  });
-  if (!response.ok) {
-    throw new Error("Failed to select sound");
   }
   return response.json();
 }
@@ -58,14 +46,10 @@ export async function uploadSound(file) {
   const formData = new FormData();
   formData.append("file", file);
 
-  const response = await fetch(`${BASE_URL}/sounds/upload`, {
+  return fetch(`${BASE_URL}/app/upload-sound`, {
     method: "POST",
     body: formData
   });
-  if (!response.ok) {
-    throw new Error("Failed to upload sound");
-  }
-  return response.json();
 }
 
 export async function getSettings() {

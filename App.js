@@ -26,8 +26,8 @@ export default function App() {
               iconName = "grid-outline";
             } else if (route.name === "Alerts") {
               iconName = "warning-outline";
-            } else if (route.name === "Controls") {
-              iconName = "megaphone-outline";
+            } else if (route.name === "Sounds") {
+              iconName = "musical-notes-outline";
             } else if (route.name === "Settings") {
               iconName = "settings-outline";
             } else if (route.name === "Motor") {
@@ -44,7 +44,7 @@ export default function App() {
       >
         <Tab.Screen name="Dashboard" component={Dashboard} />
         <Tab.Screen name="Alerts" component={Alerts} />
-        <Tab.Screen name="Controls" component={Controls} />
+        <Tab.Screen name="Sounds" component={Controls} />
         <Tab.Screen name="Settings" component={Settings} />
         <Tab.Screen name="Motor" component={MotorControl} />
       </Tab.Navigator>

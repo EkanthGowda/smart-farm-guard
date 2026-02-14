@@ -12,7 +12,6 @@ import { COLORS, RADIUS, SHADOW, SPACING } from "../constants/theme";
 import {
   getSettings,
   getSounds,
-  selectSound,
   sendCommand,
   updateSettings,
   uploadSound
@@ -28,8 +27,9 @@ export default function Controls() {
 
   const loadSounds = useCallback(async () => {
     const data = await getSounds();
-    setSounds(data.sounds || []);
-    setActiveSoundId(data.selectedSoundId || null);
+    const soundList = Array.isArray(data) ? data : data.sounds || [];
+    setSounds(soundList);
+    setActiveSoundId((current) => (soundList.includes(current) ? current : null));
   }, []);
 
   const loadSettings = useCallback(async () => {
@@ -69,9 +69,18 @@ export default function Controls() {
 
     setIsBusy(true);
     try {
-      await uploadSound(file);
+      const uploadRes = await uploadSound(file);
+      const uploadData = await uploadRes.json();
+      
+      // Tell Pi to download the newly uploaded sound
+      if (uploadData.file) {
+        await sendCommand({
+          action: `UPLOAD_SOUND:${uploadData.file}`
+        });
+      }
+
       await loadSounds();
-      Alert.alert("Sound uploaded", `${file.name} is ready to use.`);
+      Alert.alert("Sound uploaded", `${file.name} uploaded and notified to Pi.`);
     } catch (err) {
       setError("Upload failed. Try again.");
     } finally {
@@ -80,7 +89,7 @@ export default function Controls() {
   };
 
   const handlePlay = async () => {
-    const activeSound = sounds.find((sound) => sound.id === activeSoundId);
+    const activeSound = sounds.find((sound) => sound === activeSoundId);
     if (!activeSoundId) {
       Alert.alert("Select a sound", "Pick a sound before playing.");
       return;
@@ -89,7 +98,7 @@ export default function Controls() {
     setIsBusy(true);
     try {
       await sendCommand({ action: "PLAY_SOUND", soundId: activeSoundId });
-      Alert.alert("Play sound", activeSound ? activeSound.name : "No sound");
+      Alert.alert("Play sound", activeSound || "No sound");
     } catch (err) {
       setError("Unable to send play command.");
     } finally {
@@ -110,9 +119,16 @@ export default function Controls() {
   };
 
   const handleSelectSound = async (soundId) => {
+    const sound = sounds.find((s) => s === soundId);
     setIsBusy(true);
     try {
-      await selectSound(soundId);
+      // Tell Pi which sound to play
+      if (sound) {
+        await sendCommand({
+          action: `SET_SOUND:${sound}`
+        });
+      }
+
       setActiveSoundId(soundId);
     } catch (err) {
       setError("Unable to select sound.");
@@ -141,9 +157,9 @@ export default function Controls() {
 
   return (
     <ScrollView contentContainerStyle={styles.container}>
-      <Text style={styles.header}>Manual Controls</Text>
+      <Text style={styles.header}>Sound Controls</Text>
       <Text style={styles.subheader}>
-        Trigger deterrent audio anytime.
+        Upload, select, and play deterrent audio.
       </Text>
 
       {error ? <Text style={styles.errorText}>{error}</Text> : null}
@@ -151,7 +167,7 @@ export default function Controls() {
       <View style={styles.sectionCard}>
         <Text style={styles.sectionTitle}>Active Sound</Text>
         <Text style={styles.sectionValue}>
-          {sounds.find((sound) => sound.id === activeSoundId)?.name ||
+          {sounds.find((sound) => sound === activeSoundId) ||
             (isSyncing ? "Loading..." : "None selected")}
         </Text>
         <View style={styles.actionRow}>
@@ -209,23 +225,21 @@ export default function Controls() {
 
         {sounds.map((sound) => (
           <TouchableOpacity
-            key={sound.id}
+            key={sound}
             style={
-              sound.id === activeSoundId
+              sound === activeSoundId
                 ? styles.soundRowActive
                 : styles.soundRow
             }
-            onPress={() => handleSelectSound(sound.id)}
+            onPress={() => handleSelectSound(sound)}
             disabled={isBusy}
           >
             <View>
-              <Text style={styles.soundName}>{sound.name}</Text>
-              <Text style={styles.soundMeta}>
-                {sound.source === "built-in" ? "Built-in" : "Uploaded"}
-              </Text>
+              <Text style={styles.soundName}>{sound}</Text>
+              <Text style={styles.soundMeta}>Uploaded</Text>
             </View>
             <Text style={styles.soundSelect}>
-              {sound.id === activeSoundId ? "Selected" : "Select"}
+              {sound === activeSoundId ? "Selected" : "Select"}
             </Text>
           </TouchableOpacity>
         ))}
