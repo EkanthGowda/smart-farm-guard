@@ -1,51 +1,95 @@
-import React from "react";
-import { View, Text, StyleSheet, ScrollView } from "react-native";
+import React, { useCallback, useEffect, useState } from "react";
+import {
+  View,
+  Text,
+  StyleSheet,
+  ScrollView,
+  TouchableOpacity
+} from "react-native";
 import InfoCard from "../components/InfoCard";
 import { COLORS, RADIUS, SHADOW, SPACING } from "../constants/theme";
+import { getLatestDetection } from "../services/api";
 
 export default function Dashboard() {
+  const [latestDetection, setLatestDetection] = useState(null);
+  const [isLoading, setIsLoading] = useState(false);
+  const [error, setError] = useState("");
+
+  const loadLatestDetection = useCallback(async () => {
+    setIsLoading(true);
+    setError("");
+    try {
+      const data = await getLatestDetection();
+      setLatestDetection(data || null);
+    } catch (err) {
+      setError("Unable to fetch latest detection. Check your connection.");
+    } finally {
+      setIsLoading(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    loadLatestDetection();
+  }, [loadLatestDetection]);
+
+  const detectionType =
+    latestDetection?.label ||
+    latestDetection?.animal ||
+    latestDetection?.type ||
+    "Unknown";
+  const detectionTime =
+    latestDetection?.time ||
+    latestDetection?.timestamp ||
+    latestDetection?.createdAt ||
+    "Unknown";
+  const detectionConfidence =
+    typeof latestDetection?.confidence === "number"
+      ? `${Math.round(latestDetection.confidence * 100)}%`
+      : "Unknown";
+
   return (
     <ScrollView contentContainerStyle={styles.container}>
-      <View style={styles.headerRow}>
-        <View>
-          <Text style={styles.title}>Smart Farm Guard</Text>
-          <Text style={styles.subtitle}>Perimeter monitoring</Text>
-        </View>
-        <View style={styles.statusPill}>
-          <View style={styles.statusDot} />
-          <Text style={styles.statusText}>Online</Text>
-        </View>
+      <Text style={styles.header}>Latest Detection</Text>
+      <Text style={styles.subheader}>Live data from your Raspberry Pi</Text>
+
+      <View style={styles.actionRow}>
+        <TouchableOpacity style={styles.ghostButton} onPress={loadLatestDetection}>
+          <Text style={styles.ghostButtonText}>
+            {isLoading ? "Loading..." : "Refresh"}
+          </Text>
+        </TouchableOpacity>
       </View>
 
-      <View style={styles.summaryCard}>
-        <Text style={styles.summaryLabel}>Active Zone</Text>
-        <Text style={styles.summaryValue}>North Field</Text>
-        <Text style={styles.summaryHint}>Auto deterrent is enabled</Text>
-      </View>
+      {error ? <Text style={styles.errorText}>{error}</Text> : null}
 
-      <InfoCard
-        title="Device Status"
-        value="ONLINE"
-        color={COLORS.secondary}
-      />
+      {!latestDetection ? (
+        <Text style={styles.emptyText}>No detections from the device yet.</Text>
+      ) : (
+        <>
+          <InfoCard
+            title="Detected"
+            value={detectionType}
+            color={COLORS.primary}
+          />
+          <InfoCard
+            title="Confidence"
+            value={detectionConfidence}
+            color={COLORS.warning}
+          />
+          <InfoCard
+            title="Time"
+            value={detectionTime}
+            color={COLORS.secondary}
+          />
 
-      <InfoCard
-        title="Location"
-        value="Bangalore"
-        color={COLORS.primary}
-      />
-
-      <InfoCard
-        title="Detections Today"
-        value="3"
-        color={COLORS.warning}
-      />
-
-      <InfoCard
-        title="Last Detection"
-        value="10:32 AM"
-        color={COLORS.danger}
-      />
+          <View style={styles.detailsCard}>
+            <Text style={styles.detailsTitle}>Raw Payload</Text>
+            <Text style={styles.detailsText}>
+              {JSON.stringify(latestDetection, null, 2)}
+            </Text>
+          </View>
+        </>
+      )}
     </ScrollView>
   );
 }
@@ -56,65 +100,56 @@ const styles = StyleSheet.create({
     padding: SPACING.md,
     paddingBottom: SPACING.lg
   },
-  headerRow: {
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "space-between",
-    marginBottom: SPACING.md
-  },
-  title: {
-    fontSize: 24,
+  header: {
+    fontSize: 22,
     fontWeight: "700",
-    color: COLORS.primary
-  },
-  subtitle: {
-    marginTop: 4,
-    fontSize: 14,
-    color: COLORS.textMuted
-  },
-  statusPill: {
-    flexDirection: "row",
-    alignItems: "center",
-    backgroundColor: COLORS.card,
-    borderColor: COLORS.border,
-    borderWidth: 1,
-    paddingHorizontal: SPACING.sm,
-    paddingVertical: 6,
-    borderRadius: RADIUS.md
-  },
-  statusDot: {
-    width: 8,
-    height: 8,
-    borderRadius: 4,
-    backgroundColor: COLORS.secondary,
-    marginRight: 6
-  },
-  statusText: {
-    fontSize: 12,
     color: COLORS.text
   },
-  summaryCard: {
-    backgroundColor: COLORS.card,
-    borderRadius: RADIUS.md,
-    padding: SPACING.md,
+  subheader: {
+    marginTop: 4,
     marginBottom: SPACING.md,
+    color: COLORS.textMuted
+  },
+  actionRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    marginBottom: SPACING.md
+  },
+  ghostButton: {
+    paddingVertical: 10,
+    paddingHorizontal: SPACING.md,
+    borderRadius: RADIUS.sm,
+    borderWidth: 1,
+    borderColor: COLORS.border,
+    alignItems: "center"
+  },
+  ghostButtonText: {
+    color: COLORS.text
+  },
+  errorText: {
+    color: COLORS.danger,
+    marginBottom: SPACING.sm
+  },
+  emptyText: {
+    textAlign: "center",
+    color: COLORS.textMuted,
+    marginTop: SPACING.lg
+  },
+  detailsCard: {
+    backgroundColor: COLORS.card,
+    padding: SPACING.md,
+    borderRadius: RADIUS.md,
+    marginTop: SPACING.sm,
     ...SHADOW.sm
   },
-  summaryLabel: {
-    fontSize: 12,
-    color: COLORS.textMuted,
-    textTransform: "uppercase",
-    letterSpacing: 0.5
-  },
-  summaryValue: {
-    fontSize: 18,
+  detailsTitle: {
+    fontSize: 14,
     fontWeight: "700",
     color: COLORS.text,
-    marginTop: 6
+    marginBottom: 8
   },
-  summaryHint: {
-    marginTop: 6,
-    fontSize: 13,
-    color: COLORS.textMuted
+  detailsText: {
+    color: COLORS.textMuted,
+    fontSize: 12
   }
 });
