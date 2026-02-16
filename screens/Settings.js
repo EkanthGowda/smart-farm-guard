@@ -6,15 +6,18 @@ import {
   TextInput,
   Switch,
   TouchableOpacity,
-  Alert
+  Alert,
+  ScrollView
 } from "react-native";
 import { COLORS, RADIUS, SHADOW, SPACING } from "../constants/theme";
-import { getSettings, updateSettings } from "../services/api";
+import { getSettings, updateSettings, getSounds } from "../services/api";
 
 export default function Settings() {
   const [threshold, setThreshold] = useState("0.50");
   const [autoSound, setAutoSound] = useState(true);
   const [pushAlerts, setPushAlerts] = useState(true);
+  const [defaultSound, setDefaultSound] = useState("alert.wav");
+  const [sounds, setSounds] = useState([]);
   const [isSaving, setIsSaving] = useState(false);
   const [error, setError] = useState("");
 
@@ -31,9 +34,24 @@ export default function Settings() {
       if (typeof current.pushAlerts === "boolean") {
         setPushAlerts(current.pushAlerts);
       }
+      if (typeof current.defaultSound === "string") {
+        setDefaultSound(current.defaultSound);
+      }
       setError("");
     } catch (err) {
       setError("Unable to load settings.");
+    }
+  }, []);
+
+  const loadSounds = useCallback(async () => {
+    try {
+      const data = await getSounds();
+      const uploads = Array.isArray(data) ? data : data.uploads || [];
+      const deviceSounds = Array.isArray(data) ? [] : data.device || [];
+      const merged = [...deviceSounds, ...uploads];
+      setSounds(merged);
+    } catch (err) {
+      // Silent fail for sounds list
     }
   }, []);
 
@@ -50,7 +68,8 @@ export default function Settings() {
       await updateSettings({
         confidenceThreshold: value,
         autoSound,
-        pushAlerts
+        pushAlerts,
+        defaultSound
       });
       Alert.alert("Saved", "Settings updated successfully.");
     } finally {
@@ -60,10 +79,11 @@ export default function Settings() {
 
   useEffect(() => {
     loadSettings();
-  }, [loadSettings]);
+    loadSounds();
+  }, [loadSettings, loadSounds]);
 
   return (
-    <View style={styles.container}>
+    <ScrollView contentContainerStyle={styles.container}>
       <Text style={styles.header}>Settings</Text>
       <Text style={styles.subheader}>Adjust detection preferences.</Text>
 
@@ -112,12 +132,41 @@ export default function Settings() {
         </View>
       </View>
 
+      <View style={styles.sectionCard}>
+        <Text style={styles.sectionTitle}>Default Alert Sound</Text>
+        <Text style={styles.helperText}>Sound to play on monkey detection</Text>
+        <View style={styles.soundList}>
+          {sounds.map((sound) => {
+            const soundName = typeof sound === "string" ? sound : sound.name || sound;
+            return (
+              <TouchableOpacity
+                key={soundName}
+                style={[
+                  styles.soundOption,
+                  soundName === defaultSound && styles.soundOptionActive
+                ]}
+                onPress={() => setDefaultSound(soundName)}
+              >
+                <Text
+                  style={[
+                    styles.soundOptionText,
+                    soundName === defaultSound && styles.soundOptionTextActive
+                  ]}
+                >
+                  {soundName}
+                </Text>
+              </TouchableOpacity>
+            );
+          })}
+        </View>
+      </View>
+
       <TouchableOpacity style={styles.saveButton} onPress={handleSave}>
         <Text style={styles.saveButtonText}>
           {isSaving ? "Saving..." : "Save Settings"}
         </Text>
       </TouchableOpacity>
-    </View>
+    </ScrollView>
   );
 }
 
@@ -183,5 +232,29 @@ const styles = StyleSheet.create({
     color: "#FFF",
     fontWeight: "700",
     fontSize: 16
+  },
+  soundList: {
+    marginTop: SPACING.sm
+  },
+  soundOption: {
+    paddingVertical: SPACING.sm,
+    paddingHorizontal: SPACING.md,
+    borderRadius: RADIUS.sm,
+    borderWidth: 1,
+    borderColor: COLORS.border,
+    marginBottom: SPACING.xs,
+    backgroundColor: "#FAFAFA"
+  },
+  soundOptionActive: {
+    backgroundColor: COLORS.primary,
+    borderColor: COLORS.primary
+  },
+  soundOptionText: {
+    color: COLORS.text,
+    fontSize: 14
+  },
+  soundOptionTextActive: {
+    color: "#FFF",
+    fontWeight: "700"
   }
 });

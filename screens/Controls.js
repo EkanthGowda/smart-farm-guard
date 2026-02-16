@@ -27,9 +27,16 @@ export default function Controls() {
 
   const loadSounds = useCallback(async () => {
     const data = await getSounds();
-    const soundList = Array.isArray(data) ? data : data.sounds || [];
-    setSounds(soundList);
-    setActiveSoundId((current) => (soundList.includes(current) ? current : null));
+    const uploads = Array.isArray(data) ? data : data.uploads || [];
+    const deviceSounds = Array.isArray(data) ? [] : data.device || [];
+    const merged = [
+      ...deviceSounds.map((name) => ({ name, source: "pi" })),
+      ...uploads.map((name) => ({ name, source: "cloud" }))
+    ];
+    setSounds(merged);
+    setActiveSoundId((current) =>
+      merged.some((sound) => sound.name === current) ? current : null
+    );
   }, []);
 
   const loadSettings = useCallback(async () => {
@@ -89,7 +96,7 @@ export default function Controls() {
   };
 
   const handlePlay = async () => {
-    const activeSound = sounds.find((sound) => sound === activeSoundId);
+    const activeSound = sounds.find((sound) => sound.name === activeSoundId);
     if (!activeSoundId) {
       Alert.alert("Select a sound", "Pick a sound before playing.");
       return;
@@ -99,7 +106,7 @@ export default function Controls() {
     try {
       await sendCommand({ action: `SET_SOUND:${activeSoundId}` });
       await sendCommand({ action: "PLAY_SOUND" });
-      Alert.alert("Play sound", activeSound || "No sound");
+      Alert.alert("Play sound", activeSound?.name || "No sound");
     } catch (err) {
       setError("Unable to send play command.");
     } finally {
@@ -120,13 +127,13 @@ export default function Controls() {
   };
 
   const handleSelectSound = async (soundId) => {
-    const sound = sounds.find((s) => s === soundId);
+    const sound = sounds.find((s) => s.name === soundId);
     setIsBusy(true);
     try {
       // Tell Pi which sound to play
       if (sound) {
         await sendCommand({
-          action: `SET_SOUND:${sound}`
+          action: `SET_SOUND:${sound.name}`
         });
       }
 
@@ -168,7 +175,7 @@ export default function Controls() {
       <View style={styles.sectionCard}>
         <Text style={styles.sectionTitle}>Active Sound</Text>
         <Text style={styles.sectionValue}>
-          {sounds.find((sound) => sound === activeSoundId) ||
+          {sounds.find((sound) => sound.name === activeSoundId)?.name ||
             (isSyncing ? "Loading..." : "None selected")}
         </Text>
         <View style={styles.actionRow}>
@@ -226,21 +233,23 @@ export default function Controls() {
 
         {sounds.map((sound) => (
           <TouchableOpacity
-            key={sound}
+            key={`${sound.source}-${sound.name}`}
             style={
-              sound === activeSoundId
+              sound.name === activeSoundId
                 ? styles.soundRowActive
                 : styles.soundRow
             }
-            onPress={() => handleSelectSound(sound)}
+            onPress={() => handleSelectSound(sound.name)}
             disabled={isBusy}
           >
             <View>
-              <Text style={styles.soundName}>{sound}</Text>
-              <Text style={styles.soundMeta}>Uploaded</Text>
+              <Text style={styles.soundName}>{sound.name}</Text>
+              <Text style={styles.soundMeta}>
+                {sound.source === "pi" ? "On Pi" : "Uploaded"}
+              </Text>
             </View>
             <Text style={styles.soundSelect}>
-              {sound === activeSoundId ? "Selected" : "Select"}
+              {sound.name === activeSoundId ? "Selected" : "Select"}
             </Text>
           </TouchableOpacity>
         ))}

@@ -35,7 +35,7 @@ export async function getAlerts() {
 }
 
 export async function getSounds() {
-  const response = await fetch(`${BASE_URL}/app/sounds`);
+  const response = await fetch(`${BASE_URL}/app/sounds?device_id=farm_001`);
   if (!response.ok) {
     throw new Error("Failed to fetch sounds");
   }
