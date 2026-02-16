@@ -73,7 +73,7 @@ export async function updateSettings(payload) {
 }
 
 export async function getMotorState() {
-  const response = await fetch(`${BASE_URL}/motor/state/farm_001`);
+  const response = await fetch(`${BASE_URL}/app/motor`);
   if (!response.ok) {
     throw new Error("Failed to fetch motor state");
   }
@@ -81,7 +81,7 @@ export async function getMotorState() {
 }
 
 export async function setMotorState(action) {
-  const response = await fetch(`${BASE_URL}/motor/command`, {
+  const response = await fetch(`${BASE_URL}/app/motor`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({ device_id: "farm_001", action })
