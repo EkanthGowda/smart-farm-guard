@@ -22,6 +22,7 @@ export default function MotorControl() {
     setIsBusy(true);
     try {
       await sendCommand({ action: `MOTOR_${action}` });
+      setMotorState(action);
       await fetchMotorState();
     } catch (err) {
       setError("Unable to update motor state.");
