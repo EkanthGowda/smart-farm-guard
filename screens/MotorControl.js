@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from "react";
 import { View, Text, TouchableOpacity, StyleSheet } from "react-native";
-import { COLORS, RADIUS, SPACING } from "../constants/theme";
+import { COLORS, RADIUS, SHADOW, SPACING } from "../constants/theme";
 import { getMotorState, setMotorState } from "../services/api";
 
 export default function MotorControl() {
