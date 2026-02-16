@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from "react";
 import { View, Text, TouchableOpacity, StyleSheet } from "react-native";
 import { COLORS, RADIUS, SHADOW, SPACING } from "../constants/theme";
-import { getMotorState, setMotorState } from "../services/api";
+import { getMotorState, sendCommand } from "../services/api";
 
 export default function MotorControl() {
   const [motorState, setMotorState] = useState("OFF");
@@ -21,7 +21,7 @@ export default function MotorControl() {
   const sendMotorCommand = async (action) => {
     setIsBusy(true);
     try {
-      await setMotorState(action);
+      await sendCommand({ action: `MOTOR_${action}` });
       await fetchMotorState();
     } catch (err) {
       setError("Unable to update motor state.");
