@@ -71,3 +71,23 @@ export async function updateSettings(payload) {
   }
   return response.json();
 }
+
+export async function getMotorState() {
+  const response = await fetch(`${BASE_URL}/app/motor`);
+  if (!response.ok) {
+    throw new Error("Failed to fetch motor state");
+  }
+  return response.json();
+}
+
+export async function setMotorState(action) {
+  const response = await fetch(`${BASE_URL}/app/motor`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ device_id: "farm_001", action })
+  });
+  if (!response.ok) {
+    throw new Error("Failed to update motor state");
+  }
+  return response.json();
+}

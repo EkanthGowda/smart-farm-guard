@@ -97,7 +97,8 @@ export default function Controls() {
 
     setIsBusy(true);
     try {
-      await sendCommand({ action: "PLAY_SOUND", soundId: activeSoundId });
+      await sendCommand({ action: `SET_SOUND:${activeSoundId}` });
+      await sendCommand({ action: "PLAY_SOUND" });
       Alert.alert("Play sound", activeSound || "No sound");
     } catch (err) {
       setError("Unable to send play command.");

@@ -1,28 +1,33 @@
 import React, { useEffect, useState } from "react";
 import { View, Text, TouchableOpacity, StyleSheet } from "react-native";
-
-const BASE_URL = "https://iot-bbackend.onrender.com";
+import { COLORS, RADIUS, SHADOW, SPACING } from "../constants/theme";
+import { getMotorState, setMotorState } from "../services/api";
 
 export default function MotorControl() {
   const [motorState, setMotorState] = useState("OFF");
+  const [error, setError] = useState("");
+  const [isBusy, setIsBusy] = useState(false);
 
   const fetchMotorState = async () => {
-    const res = await fetch(`${BASE_URL}/app/motor`);
-    const data = await res.json();
-    setMotorState(data.motorState);
+    try {
+      const data = await getMotorState();
+      setMotorState(data.motorState || "OFF");
+      setError("");
+    } catch (err) {
+      setError("Unable to load motor state.");
+    }
   };
 
   const sendMotorCommand = async (action) => {
-    await fetch(`${BASE_URL}/app/motor`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        device_id: "farm_001",
-        action
-      })
-    });
-
-    fetchMotorState();
+    setIsBusy(true);
+    try {
+      await setMotorState(action);
+      await fetchMotorState();
+    } catch (err) {
+      setError("Unable to update motor state.");
+    } finally {
+      setIsBusy(false);
+    }
   };
 
   useEffect(() => {
@@ -32,22 +37,29 @@ export default function MotorControl() {
   return (
     <View style={styles.container}>
       <Text style={styles.header}>Motor Control</Text>
+      <Text style={styles.subheader}>Start or stop irrigation instantly.</Text>
 
-      <Text style={styles.status}>Current State: {motorState}</Text>
+      {error ? <Text style={styles.errorText}>{error}</Text> : null}
 
-      <TouchableOpacity
-        style={[styles.button, { backgroundColor: "green" }]}
-        onPress={() => sendMotorCommand("ON")}
-      >
-        <Text style={styles.buttonText}>Turn Motor ON</Text>
-      </TouchableOpacity>
+      <View style={styles.sectionCard}>
+        <Text style={styles.status}>Current State: {motorState}</Text>
 
-      <TouchableOpacity
-        style={[styles.button, { backgroundColor: "red" }]}
-        onPress={() => sendMotorCommand("OFF")}
-      >
-        <Text style={styles.buttonText}>Turn Motor OFF</Text>
-      </TouchableOpacity>
+        <TouchableOpacity
+          style={[styles.button, styles.onButton, isBusy && styles.buttonDisabled]}
+          onPress={() => sendMotorCommand("ON")}
+          disabled={isBusy}
+        >
+          <Text style={styles.buttonText}>Turn Motor ON</Text>
+        </TouchableOpacity>
+
+        <TouchableOpacity
+          style={[styles.button, styles.offButton, isBusy && styles.buttonDisabled]}
+          onPress={() => sendMotorCommand("OFF")}
+          disabled={isBusy}
+        >
+          <Text style={styles.buttonText}>Turn Motor OFF</Text>
+        </TouchableOpacity>
+      </View>
     </View>
   );
 }
@@ -55,27 +67,54 @@ export default function MotorControl() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    padding: 20,
-    backgroundColor: "#F5F5F5"
+    padding: SPACING.md,
+    backgroundColor: COLORS.background
   },
   header: {
     fontSize: 22,
-    fontWeight: "bold",
-    marginBottom: 20
+    fontWeight: "700",
+    color: COLORS.text
+  },
+  subheader: {
+    marginTop: 4,
+    marginBottom: SPACING.md,
+    color: COLORS.textMuted
+  },
+  errorText: {
+    color: COLORS.danger,
+    marginBottom: SPACING.sm
+  },
+  sectionCard: {
+    backgroundColor: COLORS.card,
+    borderRadius: RADIUS.md,
+    padding: SPACING.md,
+    ...SHADOW.sm
   },
   status: {
-    fontSize: 18,
-    marginBottom: 20
+    fontSize: 16,
+    fontWeight: "700",
+    color: COLORS.text,
+    marginBottom: SPACING.md
   },
   button: {
-    padding: 15,
-    borderRadius: 8,
-    marginBottom: 15
+    paddingVertical: 12,
+    borderRadius: RADIUS.sm,
+    marginBottom: SPACING.sm,
+    alignItems: "center"
+  },
+  onButton: {
+    backgroundColor: COLORS.secondary
+  },
+  offButton: {
+    backgroundColor: COLORS.danger
   },
   buttonText: {
     color: "#FFF",
     textAlign: "center",
     fontSize: 16,
-    fontWeight: "bold"
+    fontWeight: "700"
+  },
+  buttonDisabled: {
+    opacity: 0.6
   }
 });
