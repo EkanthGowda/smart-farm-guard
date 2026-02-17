@@ -1,17 +1,82 @@
-import React from "react";
+import React, { useEffect } from "react";
 import { NavigationContainer } from "@react-navigation/native";
 import { createBottomTabNavigator } from "@react-navigation/bottom-tabs";
 import { Ionicons } from "@expo/vector-icons";
+import * as Device from "expo-device";
+import * as Notifications from "expo-notifications";
+import Constants from "expo-constants";
 import Dashboard from "./screens/Dashboard";
 import Alerts from "./screens/Alerts";
 import Controls from "./screens/Controls";
 import Settings from "./screens/Settings";
 import MotorControl from "./screens/MotorControl";
 import { COLORS } from "./constants/theme";
+import { registerPushToken } from "./services/api";
 
 const Tab = createBottomTabNavigator();
 
+Notifications.setNotificationHandler({
+  handleNotification: async () => ({
+    shouldShowAlert: true,
+    shouldPlaySound: true,
+    shouldSetBadge: false
+  })
+});
+
+async function registerForPushNotificationsAsync() {
+  if (!Device.isDevice) {
+    return null;
+  }
+
+  const { status: existingStatus } = await Notifications.getPermissionsAsync();
+  let finalStatus = existingStatus;
+
+  if (existingStatus !== "granted") {
+    const { status } = await Notifications.requestPermissionsAsync();
+    finalStatus = status;
+  }
+
+  if (finalStatus !== "granted") {
+    return null;
+  }
+
+  const projectId = Constants?.expoConfig?.extra?.eas?.projectId;
+  const tokenResponse = await Notifications.getExpoPushTokenAsync(
+    projectId ? { projectId } : undefined
+  );
+
+  if (Device.osName === "Android") {
+    await Notifications.setNotificationChannelAsync("default", {
+      name: "default",
+      importance: Notifications.AndroidImportance.HIGH
+    });
+  }
+
+  return tokenResponse.data;
+}
+
 export default function App() {
+  useEffect(() => {
+    let isMounted = true;
+
+    const registerPush = async () => {
+      try {
+        const token = await registerForPushNotificationsAsync();
+        if (token && isMounted) {
+          await registerPushToken(token);
+        }
+      } catch (err) {
+        // No-op: push setup should not block app load.
+      }
+    };
+
+    registerPush();
+
+    return () => {
+      isMounted = false;
+    };
+  }, []);
+
   return (
     <NavigationContainer>
       <Tab.Navigator

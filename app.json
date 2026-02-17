@@ -20,6 +20,10 @@
         "foregroundImage": "./assets/adaptive-icon.png",
         "backgroundColor": "#ffffff"
       },
+      "notification": {
+        "icon": "./assets/icon.png",
+        "color": "#ffffff"
+      },
       "edgeToEdgeEnabled": true,
       "package": "com.farmingvipagunta.smartfarmguard"
     },

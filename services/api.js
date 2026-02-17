@@ -52,6 +52,14 @@ export async function uploadSound(file) {
   });
 }
 
+export async function registerPushToken(token) {
+  return fetch(`${BASE_URL}/app/push-token`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ device_id: "farm_001", token })
+  });
+}
+
 export async function getSettings() {
   const response = await fetch(`${BASE_URL}/settings`);
   if (!response.ok) {
