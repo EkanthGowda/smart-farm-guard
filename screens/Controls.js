@@ -145,6 +145,35 @@ export default function Controls() {
     }
   };
 
+  const handleDeleteSound = async (soundId) => {
+    setError("");
+    Alert.alert(
+      "Delete sound",
+      `Delete ${soundId} from the Pi?`,
+      [
+        { text: "Cancel", style: "cancel" },
+        {
+          text: "Delete",
+          style: "destructive",
+          onPress: async () => {
+            setIsBusy(true);
+            try {
+              await sendCommand({ action: `DELETE_SOUND:${soundId}` });
+              if (activeSoundId === soundId) {
+                setActiveSoundId(null);
+              }
+              await loadSounds();
+            } catch (err) {
+              setError("Unable to delete sound.");
+            } finally {
+              setIsBusy(false);
+            }
+          }
+        }
+      ]
+    );
+  };
+
   const handleVolumeChange = async (delta) => {
     const nextVolume = Math.min(100, Math.max(0, volume + delta));
     setVolume(nextVolume);
@@ -232,26 +261,39 @@ export default function Controls() {
         </View>
 
         {sounds.map((sound) => (
-          <TouchableOpacity
+          <View
             key={`${sound.source}-${sound.name}`}
             style={
               sound.name === activeSoundId
                 ? styles.soundRowActive
                 : styles.soundRow
             }
-            onPress={() => handleSelectSound(sound.name)}
-            disabled={isBusy}
           >
-            <View>
+            <View style={styles.soundInfo}>
               <Text style={styles.soundName}>{sound.name}</Text>
               <Text style={styles.soundMeta}>
                 {sound.source === "pi" ? "On Pi" : "Uploaded"}
               </Text>
             </View>
-            <Text style={styles.soundSelect}>
-              {sound.name === activeSoundId ? "Selected" : "Select"}
-            </Text>
-          </TouchableOpacity>
+            <View style={styles.soundActions}>
+              <TouchableOpacity
+                onPress={() => handleSelectSound(sound.name)}
+                disabled={isBusy}
+              >
+                <Text style={styles.soundSelect}>
+                  {sound.name === activeSoundId ? "Selected" : "Select"}
+                </Text>
+              </TouchableOpacity>
+              {sound.source === "pi" ? (
+                <TouchableOpacity
+                  onPress={() => handleDeleteSound(sound.name)}
+                  disabled={isBusy}
+                >
+                  <Text style={styles.soundDelete}>Delete</Text>
+                </TouchableOpacity>
+              ) : null}
+            </View>
+          </View>
         ))}
       </View>
     </ScrollView>
@@ -367,6 +409,13 @@ const styles = StyleSheet.create({
     marginHorizontal: -SPACING.sm,
     borderRadius: RADIUS.sm
   },
+  soundInfo: {
+    flex: 1,
+    paddingRight: SPACING.sm
+  },
+  soundActions: {
+    alignItems: "flex-end"
+  },
   soundName: {
     fontSize: 15,
     color: COLORS.text
@@ -380,5 +429,11 @@ const styles = StyleSheet.create({
     fontSize: 12,
     fontWeight: "700",
     color: COLORS.primary
+  },
+  soundDelete: {
+    fontSize: 12,
+    fontWeight: "700",
+    color: COLORS.danger,
+    marginTop: SPACING.xs
   }
 });

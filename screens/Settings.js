@@ -73,7 +73,11 @@ export default function Settings() {
   }, [loadSettings, loadSounds]);
 
   return (
-    <ScrollView contentContainerStyle={styles.container}>
+    <ScrollView
+      style={styles.scroll}
+      contentContainerStyle={styles.container}
+      keyboardShouldPersistTaps="handled"
+    >
       <Text style={styles.header}>Settings</Text>
       <Text style={styles.subheader}>Adjust detection preferences.</Text>
 
@@ -131,10 +135,13 @@ export default function Settings() {
 }
 
 const styles = StyleSheet.create({
-  container: {
+  scroll: {
     flex: 1,
-    padding: SPACING.md,
     backgroundColor: COLORS.background
+  },
+  container: {
+    padding: SPACING.md,
+    paddingBottom: SPACING.lg
   },
   header: {
     fontSize: 22,
