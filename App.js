@@ -63,17 +63,35 @@ export default function App() {
       try {
         const token = await registerForPushNotificationsAsync();
         if (token && isMounted) {
+          console.log("[PUSH] Token obtained:", token.substring(0, 20) + "...");
           await registerPushToken(token);
+          console.log("[PUSH] Token registered with server");
         }
       } catch (err) {
-        // No-op: push setup should not block app load.
+        console.log("[PUSH] Setup error:", err.message);
       }
     };
 
     registerPush();
 
+    // Listen for foreground notifications
+    const foregroundSubscription = Notifications.addNotificationResponseReceivedListener(
+      (response) => {
+        console.log("[PUSH] Notification tapped:", response.notification);
+      }
+    );
+
+    // Log when notification is received (foreground)
+    const receivedSubscription = Notifications.addNotificationReceivedListener(
+      (notification) => {
+        console.log("[PUSH] Notification received (foreground):", notification.request.content);
+      }
+    );
+
     return () => {
       isMounted = false;
+      foregroundSubscription.remove();
+      receivedSubscription.remove();
     };
   }, []);
 

@@ -14,8 +14,6 @@ import { getSettings, updateSettings, getSounds } from "../services/api";
 
 export default function Settings() {
   const [threshold, setThreshold] = useState("0.50");
-  const [autoSound, setAutoSound] = useState(true);
-  const [pushAlerts, setPushAlerts] = useState(true);
   const [defaultSound, setDefaultSound] = useState("alert.wav");
   const [sounds, setSounds] = useState([]);
   const [isSaving, setIsSaving] = useState(false);
@@ -27,12 +25,6 @@ export default function Settings() {
       const current = data.settings || {};
       if (typeof current.confidenceThreshold === "number") {
         setThreshold(current.confidenceThreshold.toFixed(2));
-      }
-      if (typeof current.autoSound === "boolean") {
-        setAutoSound(current.autoSound);
-      }
-      if (typeof current.pushAlerts === "boolean") {
-        setPushAlerts(current.pushAlerts);
       }
       if (typeof current.defaultSound === "string") {
         setDefaultSound(current.defaultSound);
@@ -67,8 +59,6 @@ export default function Settings() {
     try {
       await updateSettings({
         confidenceThreshold: value,
-        autoSound,
-        pushAlerts,
         defaultSound
       });
       Alert.alert("Saved", "Settings updated successfully.");
@@ -100,36 +90,6 @@ export default function Settings() {
           placeholder="0.50"
           placeholderTextColor={COLORS.textMuted}
         />
-      </View>
-
-      <View style={styles.sectionCard}>
-        <View style={styles.row}>
-          <View>
-            <Text style={styles.sectionTitle}>Auto Sound</Text>
-            <Text style={styles.helperText}>Play deterrent automatically</Text>
-          </View>
-          <Switch
-            value={autoSound}
-            onValueChange={setAutoSound}
-            trackColor={{ false: "#BDBDBD", true: COLORS.secondary }}
-            thumbColor="#FFFFFF"
-          />
-        </View>
-      </View>
-
-      <View style={styles.sectionCard}>
-        <View style={styles.row}>
-          <View>
-            <Text style={styles.sectionTitle}>Push Alerts</Text>
-            <Text style={styles.helperText}>Send alerts to your phone</Text>
-          </View>
-          <Switch
-            value={pushAlerts}
-            onValueChange={setPushAlerts}
-            trackColor={{ false: "#BDBDBD", true: COLORS.secondary }}
-            thumbColor="#FFFFFF"
-          />
-        </View>
       </View>
 
       <View style={styles.sectionCard}>
